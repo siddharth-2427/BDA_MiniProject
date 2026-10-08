@@ -1,0 +1,147 @@
+version: '3.8'
+
+services:
+  hadoop-base:
+    build:
+      context: .
+      dockerfile: docker/hadoop-base/Dockerfile
+    image: hadoop-base:latest
+    entrypoint: ["echo", "hadoop-base built successfully"]
+
+  namenode:
+    image: hadoop-base:latest
+    container_name: namenode
+    hostname: namenode
+    environment:
+      - NODE_ROLE=namenode
+    ports:
+      - "9000:9000"
+      - "9870:9870"
+    volumes:
+      - namenode_data:/hadoop/dfs/name
+      - ./hadoop/conf:/opt/hadoop/etc/hadoop
+      - ./scripts:/scripts
+      - ./data:/solar-app/data
+    depends_on:
+      - hadoop-base
+
+  datanode:
+    image: hadoop-base:latest
+    container_name: datanode
+    hostname: datanode
+    environment:
+      - NODE_ROLE=datanode
+    ports:
+      - "9864:9864"
+    volumes:
+      - datanode_data:/hadoop/dfs/data
+      - ./hadoop/conf:/opt/hadoop/etc/hadoop
+    depends_on:
+      - namenode
+
+  datanode2:
+    profiles: ["full"]
+    image: hadoop-base:latest
+    container_name: datanode2
+    hostname: datanode2
+    environment:
+      - NODE_ROLE=datanode
+    volumes:
+      - datanode2_data:/hadoop/dfs/data
+      - ./hadoop/conf:/opt/hadoop/etc/hadoop
+    depends_on:
+      - namenode
+
+  resourcemanager:
+    image: hadoop-base:latest
+    container_name: resourcemanager
+    hostname: resourcemanager
+    environment:
+      - NODE_ROLE=resourcemanager
+    ports:
+      - "8088:8088"
+    volumes:
+      - ./hadoop/conf:/opt/hadoop/etc/hadoop
+    depends_on:
+      - namenode
+
+  nodemanager:
+    image: hadoop-base:latest
+    container_name: nodemanager
+    hostname: nodemanager
+    environment:
+      - NODE_ROLE=nodemanager
+    volumes:
+      - ./hadoop/conf:/opt/hadoop/etc/hadoop
+    depends_on:
+      - resourcemanager
+
+  nodemanager2:
+    profiles: ["full"]
+    image: hadoop-base:latest
+    container_name: nodemanager2
+    hostname: nodemanager2
+    environment:
+      - NODE_ROLE=nodemanager
+    volumes:
+      - ./hadoop/conf:/opt/hadoop/etc/hadoop
+    depends_on:
+      - resourcemanager
+
+  hive:
+    image: hadoop-base:latest
+    container_name: hive
+    hostname: hive
+    environment:
+      - NODE_ROLE=hive
+    ports:
+      - "10000:10000"
+      - "10002:10002"
+    volumes:
+      - hive_metastore:/opt/hive/metastore_db
+      - ./hive/conf:/opt/hive/conf
+      - ./hadoop/conf:/opt/hadoop/etc/hadoop
+      - ./scripts:/scripts
+    depends_on:
+      - namenode
+      - resourcemanager
+
+  backend:
+    build:
+      context: .
+      dockerfile: docker/backend/Dockerfile
+    image: solar-backend:latest
+    container_name: solar-backend
+    hostname: backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./models:/solar-app/models
+      - ./state:/solar-app/state
+      - ./data:/solar-app/data
+      - ./hadoop/conf:/opt/hadoop/etc/hadoop
+      - ./hive/conf:/opt/hive/conf
+    environment:
+      - HADOOP_CONF_DIR=/opt/hadoop/etc/hadoop
+      - HIVE_CONF_DIR=/opt/hive/conf
+    depends_on:
+      - namenode
+      - resourcemanager
+      - hive
+
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/frontend/Dockerfile
+    image: solar-frontend:latest
+    container_name: solar-frontend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+
+volumes:
+  namenode_data:
+  datanode_data:
+  datanode2_data:
+  hive_metastore:

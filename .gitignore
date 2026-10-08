@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+ENV/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Node / React
+node_modules/
+dist/
+build/
+.output/
+.vite/
+
+# Data & Volumes
+data/raw/*
+!data/raw/README.md
+data/dev_sample/*
+!data/dev_sample/README.md
+data/scale_test/*
+!data/scale_test/README.md
+models/*
+!models/README.md
+state/*
+!state/README.md
+
+# OS & IDE
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Environment Variables
+.env
